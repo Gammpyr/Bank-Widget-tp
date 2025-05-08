@@ -11,26 +11,25 @@ from src.config import CBR_EXCHANGE_URL
 load_dotenv()
 
 
-def get_data_from_excel(file_name: str) -> list[dict]:
+def get_data_from_excel(file_name: str = 'operations.xlsx') -> list[dict]:
     """ Принимает имя XLSX-файла и возвращает список словарей с содержимым """
 
     try:
         excel_data = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
-        json_str = excel_data.to_dict(orient='records')
+        return excel_data.to_dict(orient='records')
     except FileNotFoundError:
-        json_str = None
-        print("Файл не найден")
+        print("Файл не найден: ../data/{file_name}")
+        return []
     except Exception as e:
-        json_str = None
         print(f"Произошла ошибка: {e}")
-
-    return json_str
+        return []
 
 
 def get_greetings_by_time() -> str:
     """Возвращает приветствие, в зависимости отт текущего времени"""
 
-    current_hour = datetime.now().hour
+    current_date = datetime.now()
+    current_hour = current_date.hour
 
     if 6 <= current_hour <= 11:
         greeting = 'Доброе утро'
@@ -81,15 +80,39 @@ def get_stock_price() -> list[dict]:
 
     for stock in user_settings_data['user_stocks']:
         ticker_symbol = stock
+
         url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={ticker_symbol}&apikey={AV_API_KEY}'
         response = requests.get(url).json()
-        data = response['Time Series (Daily)'][list(response['Time Series (Daily)'].keys())[0]]["4. close"]
-        result.append({"stock": ticker_symbol, "price": data})
+        if 'Time Series (Daily)' in response:
+            data = response['Time Series (Daily)'][list(response['Time Series (Daily)'].keys())[0]]["4. close"]
+            result.append({"stock": ticker_symbol, "price": data})
+        else:
+            print("Ошибка запроса")
+            break
 
     return result
 
 
-if __name__ == '__main__':
-    print(get_greetings_by_time())
-    print(convert_time_to_datetime('2021-07-14 22:07:40'))
+def get_cards_info(file_name: str = 'operations.xlsx'):
+    df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
+    filtered_df = df[df['Сумма операции'] < 0]
+    summ_info = filtered_df.groupby('Номер карты')['Сумма операции'].sum().to_dict()
 
+    result = []
+    for key, value in summ_info.items():
+        result.append(
+            {
+                "last_digits": key[-4:],
+                "total_spent": value,
+                "cashback": round(value / 100, 2)
+            }
+        )
+    return result
+
+
+def get_top_transaction_info():
+    pass
+
+
+if __name__ == '__main__':
+    print(get_cards_info())
