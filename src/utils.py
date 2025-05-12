@@ -26,7 +26,7 @@ def get_data_from_excel(file_name: str = 'operations.xlsx') -> list[dict]:
 
 
 def get_greetings_by_time() -> str:
-    """Возвращает приветствие, в зависимости отт текущего времени"""
+    """Возвращает приветствие, в зависимости от текущего времени"""
 
     current_date = datetime.now()
     current_hour = current_date.hour
@@ -97,7 +97,7 @@ def get_cards_info(file_name: str = 'operations.xlsx') -> list[dict]:
     """Принимает имя файла в папке ..data/ и возвращает список словарей с каждой картой в файле, суммой транзакций
     и кэшбэком по этой карте"""
     df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
-    filtered_df = df[df['Сумма операции'] < 0]
+    filtered_df = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
     summ_info = filtered_df.groupby('Номер карты')['Сумма операции'].sum().to_dict()
 
     result = []
@@ -114,17 +114,18 @@ def get_cards_info(file_name: str = 'operations.xlsx') -> list[dict]:
 
 def get_top_transaction_info(file_name: str = 'operations.xlsx'):
     """Возвращает топ-5 транзакций, по сумме платежа, из указанного файла"""
-    df = pd.read_excel(f'./data/{file_name}', engine='openpyxl')
-    only_spending = df[df['Сумма операции'] < 0]
-    sorted_df = only_spending.sort_values('Сумма операции')
-    print(sorted_df.)
-    # print(sorted_df['Дата'].head())
-    # print(sorted_df['Сумма операции'].head())
-    # print(sorted_df['Категория'].head())
-    # print(sorted_df['Описание'].head())
-
-
-    # students_df_with_nan.loc[2, 'Оценка'] = None
+    df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
+    only_spending = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
+    sorted_df = only_spending.sort_values('Сумма операции').head()
+    result = []
+    for _, row in sorted_df.iterrows():
+        result.append({
+            "date": row['Дата платежа'][:11],
+            "amount": abs(row['Сумма операции']),
+            "category": row['Категория'],
+            "description": row['Описание']
+        })
+    return result
 
 
 
