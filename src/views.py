@@ -1,6 +1,9 @@
 from src.utils import get_greetings_by_time, get_exchange_rate, get_stock_price, get_cards_info, \
     get_top_transaction_info
 
+def return_df_from_file():
+    pass
+
 
 def web_main():
     result = {"greeting": get_greetings_by_time(),

@@ -93,7 +93,9 @@ def get_stock_price() -> list[dict]:
     return result
 
 
-def get_cards_info(file_name: str = 'operations.xlsx'):
+def get_cards_info(file_name: str = 'operations.xlsx') -> list[dict]:
+    """Принимает имя файла в папке ..data/ и возвращает список словарей с каждой картой в файле, суммой транзакций
+    и кэшбэком по этой карте"""
     df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
     filtered_df = df[df['Сумма операции'] < 0]
     summ_info = filtered_df.groupby('Номер карты')['Сумма операции'].sum().to_dict()
@@ -103,16 +105,29 @@ def get_cards_info(file_name: str = 'operations.xlsx'):
         result.append(
             {
                 "last_digits": key[-4:],
-                "total_spent": value,
-                "cashback": round(value / 100, 2)
+                "total_spent": abs(value),
+                "cashback": abs(round(value / 100, 2))
             }
         )
     return result
 
 
-def get_top_transaction_info():
-    pass
+def get_top_transaction_info(file_name: str = 'operations.xlsx'):
+    """Возвращает топ-5 транзакций, по сумме платежа, из указанного файла"""
+    df = pd.read_excel(f'./data/{file_name}', engine='openpyxl')
+    only_spending = df[df['Сумма операции'] < 0]
+    sorted_df = only_spending.sort_values('Сумма операции')
+    print(sorted_df.)
+    # print(sorted_df['Дата'].head())
+    # print(sorted_df['Сумма операции'].head())
+    # print(sorted_df['Категория'].head())
+    # print(sorted_df['Описание'].head())
+
+
+    # students_df_with_nan.loc[2, 'Оценка'] = None
+
 
 
 if __name__ == '__main__':
-    print(get_cards_info())
+    # print(get_cards_info())
+    get_top_transaction_info()
