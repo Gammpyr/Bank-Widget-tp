@@ -1,34 +1,38 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-
-from src.config import CBR_EXCHANGE_URL
+from pandas.core.interchange.dataframe_protocol import DataFrame
 
 load_dotenv()
 
+DATA_DIR = Path('./data')
+SETTINGS_PATH = Path('./user_settings.json')
+CBR_EXCHANGE_URL = "https://www.cbr-xml-daily.ru/daily_json.js"
+AV_API_URL = "https://www.alphavantage.co/query"
+
 
 def get_data_from_excel(file_name: str = 'operations.xlsx') -> list[dict]:
-    """ Принимает имя XLSX-файла и возвращает список словарей с содержимым """
-
+    """ Читает XLSX-файл и возвращает список словарей """
+    file_path = DATA_DIR / file_name
     try:
-        excel_data = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
+        excel_data = pd.read_excel(file_path, engine='openpyxl')
         return excel_data.to_dict(orient='records')
     except FileNotFoundError:
-        print("Файл не найден: ../data/{file_name}")
+        print(f"Файл не найден: {file_path}")
         return []
     except Exception as e:
         print(f"Произошла ошибка: {e}")
         return []
 
 
-def get_greetings_by_time() -> str:
+def get_greetings_by_time(current_date: datetime) -> str:
     """Возвращает приветствие, в зависимости от текущего времени"""
 
-    current_date = datetime.now()
     current_hour = current_date.hour
 
     if 6 <= current_hour <= 11:
@@ -43,7 +47,8 @@ def get_greetings_by_time() -> str:
     return greeting
 
 
-def convert_time_to_datetime(date: str) -> datetime:
+# добавить обработку исключений
+def convert_date_to_datetime(date: str) -> datetime:
     """Принимает дату в виде строки и возвращает эту строку в формате datetime"""
 
     result = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
@@ -51,57 +56,73 @@ def convert_time_to_datetime(date: str) -> datetime:
     return result
 
 
+# придумать решение для повторной обработки запросов
 def get_exchange_rate() -> list[dict]:
     """ Возвращает список словарей, с курсом валют указанных в файле user_settings.json """
-    response = requests.get(CBR_EXCHANGE_URL).json()
+    try:
+        response = requests.get(CBR_EXCHANGE_URL).json()
 
-    with open('../user_settings.json', 'r') as file:
-        user_settings_data = json.load(file)
+        with open(SETTINGS_PATH, 'r') as file:
+            user_settings_data = json.load(file)
 
-    result = []
-    for value in user_settings_data["user_currencies"]:
-        data = {
-            'currency': value,
-            'rate': response["Valute"][value]["Value"]
-        }
-        result.append(data)
+        result = []
+        for value in user_settings_data["user_currencies"]:
+            data = {
+                'currency': value,
+                'rate': response["Valute"][value]["Value"]
+            }
+            result.append(data)
 
-    return result
+        return result
+    except Exception as e:
+        print(f"Ошибка получения курсов валют: {e}")
+        return []
 
 
 def get_stock_price() -> list[dict]:
     """ Возвращает список словарей, с курсом акций указанных в файле user_settings.json """
-    AV_API_KEY = os.getenv('AV_API_KEY')
+    api_key = os.getenv('AV_API_KEY')
+    if not api_key:
+        raise ValueError('API ключ не найден')
 
-    with open('../user_settings.json', 'r') as file:
-        user_settings_data = json.load(file)
+    try:
+        with open(SETTINGS_PATH, 'r') as file:
+            user_settings_data = json.load(file)
+    except Exception as e:
+        print(f'Ошибка чтения файла: {e}')
+        return []
 
     result = []
-
-    for stock in user_settings_data['user_stocks']:
-        ticker_symbol = stock
-
-        url = f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={ticker_symbol}&apikey={AV_API_KEY}'
-        response = requests.get(url).json()
-        if 'Time Series (Daily)' in response:
-            data = response['Time Series (Daily)'][list(response['Time Series (Daily)'].keys())[0]]["4. close"]
-            result.append({"stock": ticker_symbol, "price": data})
-        else:
-            print("Ошибка запроса")
-            break
+    try:
+        for stock in user_settings_data['user_stocks']:
+            params = {
+                'function': 'TIME_SERIES_DAILY',
+                'symbol': stock,
+                'apikey': api_key
+            }
+            response = requests.get(AV_API_URL, params=params).json()
+            date_list = list(response.get('Time Series (Daily)', {}).keys())
+            data = response['Time Series (Daily)'][date_list[0]]["4. close"]
+            result.append({"stock": stock, "price": data})
+    except Exception as e:
+        print(f'Ошибка: {e}]')
 
     return result
 
 
-def get_cards_info(file_name: str = 'operations.xlsx') -> list[dict]:
+def filter_transaction(df: pd.DataFrame) -> DataFrame:
+    result = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
+    return result
+
+
+def get_cards_info(df: pd.DataFrame) -> list[dict]:
     """Принимает имя файла в папке ..data/ и возвращает список словарей с каждой картой в файле, суммой транзакций
     и кэшбэком по этой карте"""
-    df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
-    filtered_df = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
-    summ_info = filtered_df.groupby('Номер карты')['Сумма операции'].sum().to_dict()
+    spending = filter_transaction(df)
+    sum_info = spending.groupby('Номер карты')['Сумма операции'].sum()
 
     result = []
-    for key, value in summ_info.items():
+    for key, value in sum_info.items():
         result.append(
             {
                 "last_digits": key[-4:],
@@ -112,11 +133,11 @@ def get_cards_info(file_name: str = 'operations.xlsx') -> list[dict]:
     return result
 
 
-def get_top_transaction_info(file_name: str = 'operations.xlsx'):
-    """Возвращает топ-5 транзакций, по сумме платежа, из указанного файла"""
-    df = pd.read_excel(f'../data/{file_name}', engine='openpyxl')
-    only_spending = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
-    sorted_df = only_spending.sort_values('Сумма операции').head()
+def get_top5_transaction_info(df):
+    """Возвращает топ-5 транзакций по сумме платежа"""
+    only_spending = filter_transaction(df)
+    sorted_df = only_spending.nsmallest(5, 'Сумма операции')
+
     result = []
     for _, row in sorted_df.iterrows():
         result.append({
@@ -125,10 +146,50 @@ def get_top_transaction_info(file_name: str = 'operations.xlsx'):
             "category": row['Категория'],
             "description": row['Описание']
         })
+
     return result
 
 
+def get_df_data_from_file(file_name: str = 'operations.xlsx') -> DataFrame:
+    """Принимает имя файла в папке /data и возвращает DataFrame объект"""
+    return pd.read_excel(DATA_DIR / file_name, engine='openpyxl')
+
+
+def cash_and_transfers_count(df: pd.DataFrame) -> list[dict]:
+    """Считает расходы наличными и переводы"""
+    spending = filter_transaction(df)
+
+    cash_only = spending[spending['Категория'] == 'Наличные']
+    transfers_only = spending[spending['Категория'] == 'Переводы']
+    result = [
+        {
+            "category": "Наличные",
+            "amount": cash_only['Сумма операции'].sum().abs().round()
+        },
+        {
+            "category": "Переводы",
+            "amount": transfers_only['Сумма операции'].sum().abs().round()
+        }
+    ]
+    return result
+
+
+def most_spending_filter(df):
+    spending = filter_transaction(df)
+    category_spending = spending.groupby('Категория')['Сумма операции'].sum().abs()
+    sorted_category = category_spending.sort_values(ascending=False)
+    top7 = sorted_category.head(7)
+
+    result = [{"category": category, "amount": amount} for category, amount in top7.items()]
+
+    if len(sorted_category[7:]) != 0:
+        other_categories = {"category": "Остальное", "amount": str(sorted_category[7:].sum())}
+        result.append(other_categories)
+
+    return result
 
 if __name__ == '__main__':
+    # print(get_cards_info(get_df_data_from_file('operations.xlsx')))
+    print(most_spending_filter(get_df_data_from_file('operations.xlsx')))
     # print(get_cards_info())
-    get_top_transaction_info()
+    # get_top5_transaction_info()
