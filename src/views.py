@@ -10,7 +10,7 @@ from src.utils import (
     get_cards_info,
     get_top5_transaction_info,
     get_df_data_from_file,
-    cash_and_transfers_count
+    cash_and_transfers_count, most_spending_filter
 )
 
 
@@ -37,13 +37,13 @@ def main_events(date, data: DataFrame, data_range: ['W', 'M', 'Y', 'ALL']='M') -
         "expenses":
             {
                 "total_amount": str(int(abs(spending['Сумма операции'].sum()))),
-                "main": [{None}],
+                "main": most_spending_filter(df),
                 "transfers_and_cash": cash_and_transfers_count(df)
             },
         "income":
             {
                 "total_amount": str(int(abs(income['Сумма операции'].sum()))),
-                "main": [{None}]
+                "main": []
             },
         "currency_rates": None,  # get_exchange_rate(), # заменить
         "stock_prices": None  # get_stock_price() # заменить
@@ -62,11 +62,11 @@ if __name__ == '__main__':
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     df = get_df_data_from_file('operations.xlsx')
 
-    main_web_data = main_web(current_date, df)
+    # main_web_data = main_web(current_date, df)
     main_events_data = main_events(current_date, df, 'M')
 
-    # with open('returned_data.json', 'w', encoding='utf-8') as file:
-    #     json.dump(main_web_data, file, ensure_ascii=False, indent=4 )
+    with open('returned_data.json', 'w', encoding='utf-8') as file:
+        json.dump(main_events_data, file, ensure_ascii=False, indent=4 )
 
     # print(main_web_data)
-    print(main_events_data)
+    # print(main_events_data)

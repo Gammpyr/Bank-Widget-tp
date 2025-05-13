@@ -164,11 +164,11 @@ def cash_and_transfers_count(df: pd.DataFrame) -> list[dict]:
     result = [
         {
             "category": "Наличные",
-            "amount": cash_only['Сумма операции'].sum().abs().round()
+            "amount": round(abs(cash_only['Сумма операции'].sum()))
         },
         {
             "category": "Переводы",
-            "amount": transfers_only['Сумма операции'].sum().abs().round()
+            "amount": round(abs(transfers_only['Сумма операции'].sum()))
         }
     ]
     return result
