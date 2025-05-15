@@ -1,61 +1,64 @@
 import json
 from datetime import datetime
+from typing import Literal
 
+import pandas as pd
 from pandas.core.interchange.dataframe_protocol import DataFrame
 
-from src.utils import (
+from utils import (
     get_greetings_by_time,
     get_exchange_rate,
     get_stock_price,
     get_cards_info,
     get_top5_transaction_info,
     get_df_data_from_file,
-    cash_and_transfers_count, most_spending_filter
+    cash_and_transfers_count, most_spending_filter, filter_transaction
 )
 
+exchange_rate = get_exchange_rate()
+stock_price = get_stock_price()
 
-def main_web(date: str, data: DataFrame):
+def main_web(date: datetime, data: DataFrame):
     """Главная функция для веб-интерфейса."""
     result = {
         "greeting": get_greetings_by_time(date),
         "cards": get_cards_info(data),
         "top_transactions": get_top5_transaction_info(data),
-        "currency_rates": get_exchange_rate(),  # заменить
-        "stock_prices": get_stock_price(),  # заменить
+        "currency_rates": exchange_rate,  # заменить
+        "stock_prices": stock_price,  # заменить
     }
 
     return result
 
 
-def main_events(date, data: DataFrame, data_range: ['W', 'M', 'Y', 'ALL']='M') -> dict:
+def main_events(date, data: pd.DataFrame, data_range: Literal['W', 'M', 'Y', 'ALL'] = 'M') -> dict:
     """Главная функция для событий с возможностью фильтрации по периоду"""
     # W-неделя, M-месяц, Y-год, ALL-всё время
-    spending = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
-    income = df[(df['Сумма операции'] > 0) & (df['Статус'] != 'FAILED')]
+    spending = filter_transaction(df)
+    income = df[(df['Сумма платежа'] > 0) & (df['Статус'] != 'FAILED')]
 
     result = {
         "expenses":
             {
-                "total_amount": str(int(abs(spending['Сумма операции'].sum()))),
+                "total_amount": str(int(abs(spending['Сумма платежа'].sum()))),
                 "main": most_spending_filter(df),
                 "transfers_and_cash": cash_and_transfers_count(df)
             },
         "income":
             {
-                "total_amount": str(int(abs(income['Сумма операции'].sum()))),
+                "total_amount": str(int(abs(income['Сумма платежа'].sum()))),
                 "main": []
             },
-        "currency_rates": None,  # get_exchange_rate(), # заменить
-        "stock_prices": None  # get_stock_price() # заменить
+        "currency_rates": exchange_rate, # заменить
+        "stock_prices": stock_price # заменить
     }
 
     return result
 
 
 def filter_data_by_range(data: DataFrame, date: str, data_range: str) -> DataFrame:
-    #Написать функцию сортировки DF по указанной дате
+    # Написать функцию сортировки DF по указанной дате
     pass
-
 
 
 if __name__ == '__main__':
@@ -66,7 +69,8 @@ if __name__ == '__main__':
     main_events_data = main_events(current_date, df, 'M')
 
     with open('returned_data.json', 'w', encoding='utf-8') as file:
-        json.dump(main_events_data, file, ensure_ascii=False, indent=4 )
+        json.dump(main_events_data, file, ensure_ascii=False, indent=4)
+    # print(main_events_data)
 
     # print(main_web_data)
-    # print(main_events_data)
+

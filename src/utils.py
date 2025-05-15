@@ -56,6 +56,11 @@ def convert_date_to_datetime(date: str) -> datetime:
     return result
 
 
+def filter_df_by_time(data: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
+    filtered_df = []
+    pass
+
+
 # придумать решение для повторной обработки запросов
 def get_exchange_rate() -> list[dict]:
     """ Возвращает список словарей, с курсом валют указанных в файле user_settings.json """
@@ -103,15 +108,15 @@ def get_stock_price() -> list[dict]:
             response = requests.get(AV_API_URL, params=params).json()
             date_list = list(response.get('Time Series (Daily)', {}).keys())
             data = response['Time Series (Daily)'][date_list[0]]["4. close"]
-            result.append({"stock": stock, "price": data})
+            result.append({"stock": stock, "price": float(data)})
     except Exception as e:
         print(f'Ошибка: {e}]')
 
     return result
 
 
-def filter_transaction(df: pd.DataFrame) -> DataFrame:
-    result = df[(df['Сумма операции'] < 0) & (df['Статус'] != 'FAILED')]
+def filter_transaction(df: pd.DataFrame) -> pd.DataFrame:
+    result = df[(df['Сумма платежа'] < 0) & (df['Статус'] != 'FAILED')]
     return result
 
 
@@ -119,7 +124,7 @@ def get_cards_info(df: pd.DataFrame) -> list[dict]:
     """Принимает имя файла в папке ..data/ и возвращает список словарей с каждой картой в файле, суммой транзакций
     и кэшбэком по этой карте"""
     spending = filter_transaction(df)
-    sum_info = spending.groupby('Номер карты')['Сумма операции'].sum()
+    sum_info = spending.groupby('Номер карты')['Сумма платежа'].sum()
 
     result = []
     for key, value in sum_info.items():
@@ -136,13 +141,13 @@ def get_cards_info(df: pd.DataFrame) -> list[dict]:
 def get_top5_transaction_info(df):
     """Возвращает топ-5 транзакций по сумме платежа"""
     only_spending = filter_transaction(df)
-    sorted_df = only_spending.nsmallest(5, 'Сумма операции')
+    sorted_df = only_spending.nsmallest(5, 'Сумма платежа')
 
     result = []
     for _, row in sorted_df.iterrows():
         result.append({
             "date": row['Дата платежа'][:11],
-            "amount": abs(row['Сумма операции']),
+            "amount": abs(row['Сумма платежа']),
             "category": row['Категория'],
             "description": row['Описание']
         })
@@ -164,11 +169,11 @@ def cash_and_transfers_count(df: pd.DataFrame) -> list[dict]:
     result = [
         {
             "category": "Наличные",
-            "amount": round(abs(cash_only['Сумма операции'].sum()))
+            "amount": round(abs(cash_only['Сумма платежа'].sum()))
         },
         {
             "category": "Переводы",
-            "amount": round(abs(transfers_only['Сумма операции'].sum()))
+            "amount": round(abs(transfers_only['Сумма платежа'].sum()))
         }
     ]
     return result
@@ -176,17 +181,18 @@ def cash_and_transfers_count(df: pd.DataFrame) -> list[dict]:
 
 def most_spending_filter(df):
     spending = filter_transaction(df)
-    category_spending = spending.groupby('Категория')['Сумма операции'].sum().abs()
+    category_spending = spending.groupby('Категория')['Сумма платежа'].sum().abs()
     sorted_category = category_spending.sort_values(ascending=False)
     top7 = sorted_category.head(7)
 
     result = [{"category": category, "amount": amount} for category, amount in top7.items()]
 
     if len(sorted_category[7:]) != 0:
-        other_categories = {"category": "Остальное", "amount": str(sorted_category[7:].sum())}
+        other_categories = {"category": "Остальное", "amount": sorted_category[7:].sum()}
         result.append(other_categories)
 
     return result
+
 
 if __name__ == '__main__':
     # print(get_cards_info(get_df_data_from_file('operations.xlsx')))
