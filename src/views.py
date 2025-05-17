@@ -12,11 +12,15 @@ from utils import (
     get_cards_info,
     get_top5_transaction_info,
     get_df_data_from_file,
-    cash_and_transfers_count, most_spending_filter, filter_transaction
+    cash_and_transfers_count,
+    most_spending_filter,
+    filter_transaction,
+    get_income_category
 )
 
 exchange_rate = get_exchange_rate()
 stock_price = get_stock_price()
+
 
 def main_web(date: datetime, data: DataFrame):
     """Главная функция для веб-интерфейса."""
@@ -47,7 +51,7 @@ def main_events(date, data: pd.DataFrame, data_range: Literal['W', 'M', 'Y', 'AL
         "income":
             {
                 "total_amount": str(int(abs(income['Сумма платежа'].sum()))),
-                "main": []
+                "main": get_income_category(df)
             },
         "currency_rates": exchange_rate, # заменить
         "stock_prices": stock_price # заменить
@@ -73,4 +77,3 @@ if __name__ == '__main__':
     # print(main_events_data)
 
     # print(main_web_data)
-
