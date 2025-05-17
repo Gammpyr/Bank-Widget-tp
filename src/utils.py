@@ -116,7 +116,7 @@ def get_stock_price() -> list[dict]:
 
 
 def filter_transaction(df: pd.DataFrame) -> pd.DataFrame:
-    result = df[(df['Сумма платежа'] < 0) & (df['Статус'] != 'FAILED')]
+    result = df[(df['Сумма платежа'] < 0) & (df['Статус'] == 'OK')]
     return result
 
 
@@ -194,8 +194,19 @@ def most_spending_filter(df):
     return result
 
 
+def get_income_category(df):
+    income_df = df[(df['Сумма платежа'] > 0) & (df['Статус'] == 'OK')]
+    category_income = income_df.groupby('Категория')['Сумма платежа'].sum()
+    sorted_category = category_income.sort_values(ascending=False)
+
+    result = [{"category": category, "amount": amount} for category, amount in sorted_category.items()]
+
+    return result
+
+
 if __name__ == '__main__':
     # print(get_cards_info(get_df_data_from_file('operations.xlsx')))
-    print(most_spending_filter(get_df_data_from_file('operations.xlsx')))
+    # print(most_spending_filter(get_df_data_from_file('operations.xlsx')))
+    print(get_income_category(get_df_data_from_file('operations.xlsx')))
     # print(get_cards_info())
     # get_top5_transaction_info()

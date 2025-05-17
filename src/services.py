@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -8,19 +7,20 @@ from utils import get_df_data_from_file, filter_transaction
 
 def get_high_cashback_categories(data: pd.DataFrame, year: int, month: int) -> dict:
     """Функция позволяет проанализировать, какие категории были наиболее выгодными для выбора
-    в качестве категорий повышенного кешбэка."""
+    в качестве категорий повышенного кэшбэка."""
     """
         Входные параметры:
         data — данные с транзакциями;
         year — год, за который проводится анализ;
         month — месяц, за который проводится анализ.
-        На выходе — JSON с анализом, сколько на каждой категории можно заработать кешбэка в указанном месяце года.
+        На выходе — JSON с анализом, сколько на каждой категории можно заработать кэшбэка в указанном месяце года.
     """
     filtered_data = filter_transaction(data)
+    df = filtered_data.copy()
+    df['Дата операции'] = pd.to_datetime(df['Дата операции'], dayfirst=True)
 
-    filtered_data['Дата операции'] = pd.to_datetime(filtered_data['Дата операции'])
-    filtered_by_time = filtered_data[
-        (filtered_data['Дата операции'].dt.year == year) & (filtered_data['Дата операции'].dt.month == month)
+    filtered_by_time = df[
+        (df['Дата операции'].dt.year == year) & (df['Дата операции'].dt.month == month)
         ]
 
     grouped_data = filtered_by_time.groupby('Категория')['Сумма платежа'].sum().abs()
@@ -30,10 +30,18 @@ def get_high_cashback_categories(data: pd.DataFrame, year: int, month: int) -> d
     return result.to_dict()
 
 
-
 def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) -> float:
-    pass
+    """Возвращает сумму, которую удалось бы отложить в «Инвесткопилку»"""
+    """
+    month — месяц, для которого рассчитывается отложенная сумма (строка в формате 'YYYY-MM').
+    transactions — список словарей, содержащий информацию о транзакциях, в которых содержатся следующие поля:
+        Дата операции — дата, когда произошла транзакция (строка в формате 'YYYY-MM-DD').
+        Сумма операции — сумма транзакции в оригинальной валюте (число).
+    limit — предел, до которого нужно округлять суммы операций (целое число).
+    """
+
 
 
 if __name__ == '__main__':
-    print(get_high_cashback_categories(data=get_df_data_from_file(), year=2021, month=5))
+    # print(get_high_cashback_categories(data=get_df_data_from_file(), year=2018, month=2))
+    print(investment_bank())
