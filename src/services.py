@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -30,7 +31,7 @@ def get_high_cashback_categories(data: pd.DataFrame, year: int, month: int) -> d
     return result.to_dict()
 
 
-def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) -> float:
+def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) -> int:
     """Возвращает сумму, которую удалось бы отложить в «Инвесткопилку»"""
     """
     month — месяц, для которого рассчитывается отложенная сумма (строка в формате 'YYYY-MM').
@@ -39,9 +40,25 @@ def investment_bank(month: str, transactions: list[dict[str, Any]], limit: int) 
         Сумма операции — сумма транзакции в оригинальной валюте (число).
     limit — предел, до которого нужно округлять суммы операций (целое число).
     """
+    target_month = datetime.strptime(month, '%Y-%m')
+
+    df = pd.DataFrame(transactions)
+    df['date'] = pd.to_datetime(df['date'])
+    filtered_df = df[
+        (df['date'].dt.month == target_month.month) &
+        (df['date'].dt.year == target_month.year)]
+
+    remainder = abs(filtered_df['amount']) % limit
+    return remainder[remainder != 0].apply(lambda x: limit - x).sum()
+
 
 
 
 if __name__ == '__main__':
     # print(get_high_cashback_categories(data=get_df_data_from_file(), year=2018, month=2))
-    print(investment_bank())
+    transactions = [{'date': '2025-05-14', 'amount': -68},
+                    {'date': '2025-05-14', 'amount': -44},
+                    {'date': '2025-04-13', 'amount': 3300},
+                    {'date': '2025-03-22', 'amount': 4400},
+                    ]
+    # print(investment_bank('2025-05', transactions=transactions, limit=20))
