@@ -49,6 +49,7 @@ exclude = '''
     | \.mypy_cache
     | \.tox
     | \.venv
+    | \.tests
     | dist
   )/
   | foo.py           # Также отдельно исключить файл с именем foo.py
