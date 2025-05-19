@@ -24,9 +24,7 @@ def get_data_from_excel(file_name: str = "operations.xlsx") -> list[dict]:
     except FileNotFoundError:
         print(f"Файл не найден: {file_path}")
         return []
-    except Exception as e:
-        print(f"Произошла ошибка: {e}")
-        return []
+
 
 
 def get_greetings_by_time() -> str:
@@ -57,7 +55,7 @@ def convert_date_to_datetime(date: str) -> datetime:
 
 
 # придумать решение для повторной обработки запросов
-def get_exchange_rate() -> list[dict]:
+def get_exchange_rate() -> list[dict] | str:
     """Возвращает список словарей, с курсом валют указанных в файле user_settings.json"""
     try:
         response = requests.get(CBR_EXCHANGE_URL).json()
@@ -71,9 +69,9 @@ def get_exchange_rate() -> list[dict]:
             result.append(data)
 
         return result
-    except Exception as e:
+    except AttributeError as e:
         print(f"Ошибка получения курсов валют: {e}")
-        return []
+        return f"Ошибка обработки файла: {e}"
 
 
 def get_stock_price() -> list[dict]:
