@@ -26,7 +26,6 @@ def get_data_from_excel(file_name: str = "operations.xlsx") -> list[dict]:
         return []
 
 
-
 def get_greetings_by_time() -> str:
     """Возвращает приветствие, в зависимости от текущего времени"""
     datetime.now()
@@ -69,8 +68,7 @@ def get_exchange_rate() -> list[dict] | str:
             result.append(data)
 
         return result
-    except AttributeError as e:
-        print(f"Ошибка получения курсов валют: {e}")
+    except Exception as e:
         return f"Ошибка обработки файла: {e}"
 
 
@@ -83,8 +81,7 @@ def get_stock_price() -> list[dict]:
     try:
         with open(SETTINGS_PATH, "r") as file:
             user_settings_data = json.load(file)
-    except Exception as e:
-        print(f"Ошибка чтения файла: {e}")
+    except FileNotFoundError as e:
         return []
 
     result = []
@@ -95,7 +92,7 @@ def get_stock_price() -> list[dict]:
             date_list = list(response.get("Time Series (Daily)", {}).keys())
             data = response["Time Series (Daily)"][date_list[0]]["4. close"]
             result.append({"stock": stock, "price": float(data)})
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         print(f"Ошибка: {e}")
 
     return result
@@ -188,6 +185,8 @@ def get_income_category(df: pd.DataFrame) -> list[dict]:
 def filter_data_by_range(data: pd.DataFrame, date: str, data_range: str = "M") -> pd.DataFrame:
     """Фильтрует DF по указанной дате"""
     current_date = datetime.strptime(date, "%Y-%m-%d")
+    data["Дата платежа"] = pd.to_datetime(data["Дата платежа"])
+
     if data_range == "W":
         start_date = current_date - timedelta(days=current_date.weekday())
     elif data_range == "M":
@@ -195,22 +194,22 @@ def filter_data_by_range(data: pd.DataFrame, date: str, data_range: str = "M") -
     elif data_range == "Y":
         start_date = current_date.replace(month=1, day=1)
     else:
-        start_date = datetime.min
-
-    data["Дата операции"] = pd.to_datetime(data["Дата операции"], dayfirst=True)
-    if data_range != "ALL":
-        result = data[(data["Дата операции"] >= start_date) & (data["Дата операции"] <= current_date)]
+        result = data[(data["Дата платежа"] <= current_date)]
+        result["Дата платежа"] = result["Дата платежа"].dt.strftime("%d-%m-%Y")
         return result
 
-    return data
+    result = data[(data["Дата платежа"] >= start_date) & (data["Дата платежа"] <= current_date)]
+    result["Дата платежа"] = result["Дата платежа"].dt.strftime("%d-%m-%Y")
+    return result
+
 
 
 if __name__ == "__main__":
-    # data = get_df_data_from_file("operations.xlsx")
+    data = get_df_data_from_file("operations.xlsx")
     # print(get_cards_info(data))
     # print(most_spending_filter(data))
     # print(get_income_category(data))
     # print(get_cards_info())
     # get_top5_transaction_info()
-    # print(filter_data_by_range(data, "2021-05-22", "W"))
+    print(filter_data_by_range(data, "2021-05-22", "ALL"))
     print(get_greetings_by_time())
