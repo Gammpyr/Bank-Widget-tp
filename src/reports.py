@@ -9,24 +9,7 @@ import pandas as pd
 from src.utils import filter_transaction, get_df_data_from_file
 
 
-def report_to_file(func: Callable) -> Any:
-    """Записывает данные отчета в файл с названием по умолчанию."""
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        result = func(*args, **kwargs)
-        filepath = os.path.join("reports", "report_file.txt")
-
-        with open(filepath, "w", encoding="utf-8") as file:
-            # json.dump(result, file, indent=4, ensure_ascii=False)
-            file.write(str(result))
-
-        return result
-
-    return wrapper
-
-
-def report_to_selected_file(filename: str) -> Any:
+def report_to_selected_file(filename: str = "report_file.txt") -> Any:
     """Записывает данные отчета в файл с указанным названием"""
 
     def decorator(func: Callable) -> Any:
@@ -37,7 +20,6 @@ def report_to_selected_file(filename: str) -> Any:
 
             with open(filepath, "w", encoding="utf-8") as file:
                 json.dump(result, file, indent=4, ensure_ascii=False)
-
             return result
 
         return wrapper
@@ -64,7 +46,7 @@ def get_spending_by_category(transactions: pd.DataFrame, category: str, date: Op
         (filtered_df["Категория"] == category)
         & (filtered_df["Дата операции"] >= start_date)
         & (filtered_df["Дата операции"] <= end_date)
-    ]
+        ]
 
     grouped_df = category_df.groupby("Описание")["Сумма платежа"].sum()
     result_df = grouped_df.sort_values().abs()

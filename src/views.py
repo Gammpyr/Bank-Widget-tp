@@ -45,11 +45,12 @@ def main_events(date: str, data: pd.DataFrame, data_range: Literal["W", "M", "Y"
             "main": most_spending_filter(spending),
             "transfers_and_cash": cash_and_transfers_count(spending),
         },
-        "income": {"total_amount": str(int(abs(income["Сумма платежа"].sum()))), "main": get_income_category(income)},
+        "income": {
+            "total_amount": str(int(abs(income["Сумма платежа"].sum()))),
+            "main": get_income_category(income)
+        },
         "currency_rates": exchange_rate,  # заменить
         "stock_prices": stock_price,  # заменить
     }
 
     return result
-
-
