@@ -18,6 +18,7 @@ from src.utils import (
 
 logging.basicConfig(level=logging.DEBUG,
                     filename='./logs/views.log',
+                    encoding='utf-8',
                     filemode='w',
                     format='%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d: %(message)s',
                     datefmt='%Y-%m-%d -%H:%M:%S'
