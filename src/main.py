@@ -3,10 +3,10 @@ from datetime import datetime
 
 import pandas as pd
 
-from utils import get_df_data_from_file
-from reports import get_spending_by_category
-from services import get_high_cashback_categories, investment_bank
-from views import main_events, main_web
+from src.utils import get_df_data_from_file
+from src.reports import get_spending_by_category
+from src.services import get_high_cashback_categories, investment_bank
+from src.views import main_events, main_web
 
 
 def main(df: pd.DataFrame, current_date: str, transactions: list[dict]) -> None:
@@ -27,9 +27,14 @@ def main(df: pd.DataFrame, current_date: str, transactions: list[dict]) -> None:
     spending_by_category = get_spending_by_category(df, "Супермаркеты", "19-11-2021")
 
     result = {
-        "web_pages": {"main_web_data": main_web_data, "main_events_data": main_events_data},
-        "services": {"high_cashback_categories": high_cashback_categories, "investment_bank": cashback},
-        "reports": {"spending_by_category": spending_by_category}
+        "web_pages": {
+            "main_web_data": main_web_data,
+            "main_events_data": main_events_data},
+        "services": {
+            "high_cashback_categories": high_cashback_categories,
+            "investment_bank": cashback},
+        "reports": {
+            "spending_by_category": spending_by_category}
     }
 
     with open("BankWidget.json", "w", encoding="utf-8") as file:

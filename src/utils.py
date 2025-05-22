@@ -94,6 +94,8 @@ def get_stock_price() -> list[dict]:
             result.append({"stock": stock, "price": float(data)})
     except requests.exceptions.RequestException as e:
         print(f"Ошибка: {e}")
+    except KeyError as e:
+        print(f"Ключ не найден: {e}")
 
     return result
 
@@ -204,12 +206,12 @@ def filter_data_by_range(data: pd.DataFrame, date: str, data_range: str = "M") -
 
 
 
-if __name__ == "__main__":
-    data = get_df_data_from_file("operations.xlsx")
-    # print(get_cards_info(data))
-    # print(most_spending_filter(data))
-    # print(get_income_category(data))
-    # print(get_cards_info())
-    # get_top5_transaction_info()
-    print(filter_data_by_range(data, "2021-05-22", "ALL"))
-    print(get_greetings_by_time())
+# if __name__ == "__main__":
+#     data = get_df_data_from_file("operations.xlsx")
+#     # print(get_cards_info(data))
+#     # print(most_spending_filter(data))
+#     # print(get_income_category(data))
+#     # print(get_cards_info())
+#     # get_top5_transaction_info()
+#     print(filter_data_by_range(data, "2021-05-22", "ALL"))
+#     print(get_greetings_by_time())
