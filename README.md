@@ -15,7 +15,7 @@
 
 [main.py](src/main.py)
 
-'Главная функция'
+Главная функция
 
 
 [reports.py](src/reports.py)
