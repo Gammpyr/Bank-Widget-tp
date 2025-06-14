@@ -1,5 +1,5 @@
-from typing import Literal
 import logging
+from typing import Literal
 
 import pandas as pd
 
@@ -16,15 +16,16 @@ from src.utils import (
     most_spending_filter
 )
 
-logging.basicConfig(level=logging.DEBUG,
-                    filename='./logs/views.log',
-                    encoding='utf-8',
-                    filemode='w',
-                    format='%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d: %(message)s',
-                    datefmt='%Y-%m-%d -%H:%M:%S'
-                    )
-logger_web = logging.getLogger('main_web')
-logger_events = logging.getLogger('main_events')
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename="./logs/views.log",
+    encoding="utf-8",
+    filemode="w",
+    format="%(asctime)s %(levelname)s %(funcName)s %(lineno)d: %(message)s",
+    datefmt="%Y-%m-%d -%H:%M:%S",
+)
+logger_web = logging.getLogger("main_web")
+logger_events = logging.getLogger("main_events")
 
 # logger.setLevel(logging.DEBUG)
 # file_handler = logging.FileHandler('./logs/views.log')
@@ -38,7 +39,7 @@ stock_price = get_stock_price()
 
 def main_web(date: str, data: pd.DataFrame) -> dict:
     """Главная функция для веб-интерфейса."""
-    logger_web.info('Функция начинает работу')
+    logger_web.info("Функция начинает работу")
     result = {
         "greeting": get_greetings_by_time(),
         "cards": get_cards_info(data),
@@ -46,40 +47,37 @@ def main_web(date: str, data: pd.DataFrame) -> dict:
         "currency_rates": exchange_rate,  # заменить
         "stock_prices": stock_price,  # заменить
     }
-    logger_web.info('Функция завершила работу')
+    logger_web.info("Функция завершила работу")
     return result
 
 
 def main_events(date: str, data: pd.DataFrame, data_range: Literal["W", "M", "Y", "ALL"] = "M") -> dict:
     """Главная функция для событий с возможностью фильтрации по периоду"""
     """W-неделя, M-месяц, Y-год, ALL-всё время"""
-    logger_events.info('Начало работы функции')
-    logger_events.info('Отфильтровываем DF')
+    logger_events.info("Начало работы функции")
+    logger_events.info("Отфильтровываем DF")
     df_by_time = filter_data_by_range(data, date, data_range)
     spending = filter_transaction(df_by_time)
     income = df_by_time[(df_by_time["Сумма платежа"] > 0) & (df_by_time["Статус"] != "FAILED")]
 
-    logger_events.info('Получаем информацию')
+    logger_events.info("Получаем информацию")
     expenses_total_amount = str(int(abs(spending["Сумма платежа"].sum())))
     main_spending = most_spending_filter(spending)
     transfers_and_cash = cash_and_transfers_count(spending)
     income_total_amount = str(int(abs(income["Сумма платежа"].sum())))
     main_income = get_income_category(income)
 
-    logger_events.info('Сохраняем в словарь')
+    logger_events.info("Сохраняем в словарь")
     result = {
         "expenses": {
             "total_amount": expenses_total_amount,
             "main": main_spending,
             "transfers_and_cash": transfers_and_cash,
         },
-        "income": {
-            "total_amount": income_total_amount,
-            "main": main_income
-        },
+        "income": {"total_amount": income_total_amount, "main": main_income},
         "currency_rates": exchange_rate,  # заменить
         "stock_prices": stock_price,  # заменить
     }
 
-    logger_web.info('Функция завершила работу')
+    logger_events.info("Функция завершила работу")
     return result

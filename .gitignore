@@ -173,3 +173,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 /returned_data.json
+data/BankWidget.json
