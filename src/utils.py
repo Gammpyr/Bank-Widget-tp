@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename="./logs/utils.log",
+    filename="src/logs/utils.log",
     encoding="utf-8",
     filemode="w",
     format="%(asctime)s %(levelname)s %(funcName)s %(lineno)d: %(message)s",
@@ -21,8 +21,8 @@ logger = logging.getLogger()
 
 load_dotenv()
 
-DATA_DIR = Path("./data")
-SETTINGS_PATH = Path("./user_settings.json")
+DATA_DIR = Path("data/")
+SETTINGS_PATH = Path("user_settings.json")
 CBR_EXCHANGE_URL = "https://www.cbr-xml-daily.ru/daily_json.js"
 AV_API_URL = "https://www.alphavantage.co/query"
 
@@ -183,6 +183,7 @@ def get_top5_transaction_info(df: pd.DataFrame) -> list[dict]:
 def get_df_data_from_file(file_name: str = "operations.xlsx") -> pd.DataFrame:
     """Принимает имя файла в папке /data и возвращает DataFrame объект"""
     logger.info("Функция get_df_data_from_file начинает работу")
+    print(f'Получаем данные из файла data/{file_name} \t')
     try:
         logger.info(f"Открываем файл {DATA_DIR / file_name}")
         result = pd.read_excel(DATA_DIR / file_name, engine="openpyxl")
@@ -249,23 +250,30 @@ def filter_data_by_range(data: pd.DataFrame, date: str, data_range: str = "M") -
     """Фильтрует DF по указанной дате"""
     logger.info("Функция filter_data_by_range начинает работу")
     current_date = datetime.strptime(date, "%Y-%m-%d")
+
     data_copy = data.copy()
-    data_copy["Дата платежа"] = pd.to_datetime(data_copy["Дата платежа"])
+    data_copy["Дата платежа"] = pd.to_datetime(data_copy["Дата платежа"], dayfirst=True, format="%d-%m-%Y", errors="coerce")
+
     logger.info("Вычисляем дату начала периода")
     if data_range == "W":
-        start_date = current_date - timedelta(days=current_date.weekday())
+        start_date = current_date - timedelta(days=7)
     elif data_range == "M":
         start_date = current_date.replace(day=1)
     elif data_range == "Y":
         start_date = current_date.replace(month=1, day=1)
     else:
+        # Фильтруем по всем датам до текущей
         result = data_copy[(data_copy["Дата платежа"] <= current_date)]
         result["Дата платежа"] = result["Дата платежа"].dt.strftime("%d-%m-%Y")
         return result
 
-    result = data_copy[(data_copy["Дата платежа"] >= start_date) & (data_copy["Дата платежа"] <= current_date)]
+    result = data_copy[
+        (data_copy["Дата платежа"] >= start_date) &
+        (data_copy["Дата платежа"] <= current_date)
+    ].copy()
+
     result["Дата платежа"] = result["Дата платежа"].dt.strftime("%d-%m-%Y")
-    logger.info("Функция filter_data_by_range завершает работу")
+    logger.info(f"Функция filter_data_by_range завершает работу. Найдено {len(result)} записей")
     return result
 
 
