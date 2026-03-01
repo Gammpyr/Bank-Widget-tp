@@ -1,34 +1,31 @@
-[project]
+[tool.poetry]
 name = "bankwidget"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Gammpyr",email = "malak93@yandex.ru"}
-]
+authors = ["Gammpyr <malak93@yandex.ru>"]
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "requests (>=2.32.3,<3.0.0)",
-    "pandas (>=2.2.3,<3.0.0)",
-    "python-dotenv (>=1.1.0,<2.0.0)",
-    "openpyxl (>=3.1.5,<4.0.0)"
-]
+packages = [{include = "src"}]
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.dependencies]
+python = ">=3.13"
+requests = ">=2.32.3,<3.0.0"
+pandas = ">=2.2.3,<3.0.0"
+python-dotenv = ">=1.1.0,<2.0.0"
+openpyxl = ">=3.1.5,<4.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 pytest-cov = "^6.1.1"
-
 
 [tool.poetry.group.lint.dependencies]
 flake8 = "^7.2.0"
 mypy = "^1.15.0"
 isort = "^6.0.1"
 black = "^25.1.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 disallow_untyped_defs = true
@@ -37,14 +34,12 @@ warn_return_any = true
 exclude = ['venv', 'tests']
 
 [tool.black]
-# Максимальная длина строки
 line-length = 119
-# Файлы, которые не нужно форматировать
 exclude = '''
 (
   /(
-      \.eggs         # Исключить несколько общих каталогов
-    | \.git          # в корне проекта
+      \.eggs
+    | \.git
     | \.hg
     | \.mypy_cache
     | \.tox
@@ -52,12 +47,17 @@ exclude = '''
     | \.tests
     | dist
   )/
-  | foo.py           # Также отдельно исключить файл с именем foo.py
-                     # в корне проекта
+  | foo.py
 )
 '''
 
 [tool.isort]
-# максимальная длина строки
 line_length = 119
 multi_line_output = 3
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
